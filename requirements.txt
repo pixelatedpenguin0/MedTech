@@ -1,0 +1,17 @@
+Flask==2.0.1
+Flask-SQLAlchemy==2.5.1
+Flask-Login==0.5.0
+Flask-WTF==1.2.1
+Flask-Migrate==3.1.0
+requests==2.26.0
+python-dotenv==0.19.0
+Pillow==10.2.0
+pytesseract==0.3.10
+Werkzeug==3.0.1
+email-validator==2.1.0.post1
+BeautifulSoup4==4.9.3
+Selenium==4.1.0
+FastAPI==0.68.1
+Uvicorn==0.15.0
+Pydantic==1.8.2
+Aiohttp==3.8.1 

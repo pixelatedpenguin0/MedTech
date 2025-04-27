@@ -1,0 +1,47 @@
+[
+  {
+    "medicine": "Lipitor 20mg",
+    "zip": "10001",
+    "pharmacies": [
+      {"name": "CVS Pharmacy", "price": 42.99, "distance_miles": 1.2, "address": "123 Main St, New York, NY 10001"},
+      {"name": "Walmart", "price": 29.49, "distance_miles": 2.5, "address": "456 Broadway, New York, NY 10001"},
+      {"name": "Walgreens", "price": 47.00, "distance_miles": 0.9, "address": "789 5th Ave, New York, NY 10001"}
+    ]
+  },
+  {
+    "medicine": "Ibuprofen 200mg",
+    "zip": "10001",
+    "pharmacies": [
+      {"name": "Costco", "price": 8.99, "distance_miles": 3.2, "address": "321 3rd Ave, New York, NY 10001"},
+      {"name": "Target Pharmacy", "price": 11.49, "distance_miles": 1.8, "address": "654 6th Ave, New York, NY 10001"},
+      {"name": "Walmart", "price": 9.99, "distance_miles": 2.5, "address": "456 Broadway, New York, NY 10001"}
+    ]
+  },
+  {
+    "medicine": "Metformin 500mg",
+    "zip": "10001",
+    "pharmacies": [
+      {"name": "CVS Pharmacy", "price": 15.99, "distance_miles": 1.2, "address": "123 Main St, New York, NY 10001"},
+      {"name": "Walgreens", "price": 18.50, "distance_miles": 0.9, "address": "789 5th Ave, New York, NY 10001"},
+      {"name": "Rite Aid", "price": 14.99, "distance_miles": 1.5, "address": "987 9th Ave, New York, NY 10001"}
+    ]
+  },
+  {
+    "medicine": "Amoxicillin 500mg",
+    "zip": "10001",
+    "pharmacies": [
+      {"name": "CVS Pharmacy", "price": 12.99, "distance_miles": 1.2, "address": "123 Main St, New York, NY 10001"},
+      {"name": "Walmart", "price": 10.49, "distance_miles": 2.5, "address": "456 Broadway, New York, NY 10001"},
+      {"name": "Walgreens", "price": 13.50, "distance_miles": 0.9, "address": "789 5th Ave, New York, NY 10001"}
+    ]
+  },
+  {
+    "medicine": "Amlodipine 10mg",
+    "zip": "10001",
+    "pharmacies": [
+      {"name": "CVS Pharmacy", "price": 20.99, "distance_miles": 1.2, "address": "123 Main St, New York, NY 10001"},
+      {"name": "Walmart", "price": 17.49, "distance_miles": 2.5, "address": "456 Broadway, New York, NY 10001"},
+      {"name": "Walgreens", "price": 22.00, "distance_miles": 0.9, "address": "789 5th Ave, New York, NY 10001"}
+    ]
+  }
+] 
