@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to MedTech{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h1 class="display-4 mb-4">Welcome to MedTech</h1>
+        <p class="lead">Your personal medication management assistant</p>
+        
+        {% if not current_user.is_authenticated %}
+        <div class="mt-4">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg me-3">Get Started</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg">Login</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-capsule display-4 text-primary mb-3"></i>
+                <h3>Medication Tracking</h3>
+                <p>Keep track of all your medications in one place</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-bell display-4 text-primary mb-3"></i>
+                <h3>Smart Reminders</h3>
+                <p>Never miss a dose with timely notifications</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-up display-4 text-primary mb-3"></i>
+                <h3>Adherence Tracking</h3>
+                <p>Monitor your medication adherence over time</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

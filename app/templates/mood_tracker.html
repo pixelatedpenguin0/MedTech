@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Mood + Symptom Tracker{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="background:#fff; border-radius:8px; max-width:700px;">
+    <h2 class="mb-4" style="font-weight:600; color:#222;">Mood + Symptom Tracker</h2>
+    <form id="moodForm" class="mb-5" onsubmit="submitMood(); return false;">
+        <div class="mb-3">
+            <label for="moodSlider" class="form-label">Overall Mood <span id="moodValue" style="font-weight:500; margin-left:8px;">0</span></label>
+            <input type="range" class="form-range" min="-5" max="5" value="0" id="moodSlider" style="accent-color:#0d6efd;">
+            <div class="d-flex justify-content-between" style="font-size:0.95em; color:#888;">
+                <span style="color:#b22222;">Severely Depressed</span>
+                <span>Neutral</span>
+                <span style="color:#228B22;">Extremely Positive</span>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="primaryEmotion" class="form-label">Primary Emotion <span style="color:#b22222;">*</span></label>
+            <select class="form-select" id="primaryEmotion" required>
+                <option value="">Select...</option>
+                <option>Depressed</option>
+                <option>Anxious</option>
+                <option>Angry</option>
+                <option>Fearful</option>
+                <option>Irritable</option>
+                <option>Hopeful</option>
+                <option>Calm</option>
+                <option>Focused</option>
+                <option>Fatigued</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="secondaryEmotion" class="form-label">Secondary Emotion (Optional)</label>
+            <select class="form-select" id="secondaryEmotion">
+                <option value="">None</option>
+                <option>Depressed</option>
+                <option>Anxious</option>
+                <option>Angry</option>
+                <option>Fearful</option>
+                <option>Irritable</option>
+                <option>Hopeful</option>
+                <option>Calm</option>
+                <option>Focused</option>
+                <option>Fatigued</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Energy Level</label>
+            <div class="d-flex gap-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="energy" id="energyLow" value="Low" required>
+                    <label class="form-check-label" for="energyLow">Low</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="energy" id="energyModerate" value="Moderate">
+                    <label class="form-check-label" for="energyModerate">Moderate</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="energy" id="energyHigh" value="High">
+                    <label class="form-check-label" for="energyHigh">High</label>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="reflection" class="form-label">Short Reflection (Optional)</label>
+            <textarea class="form-control" id="reflection" maxlength="300" rows="2" placeholder="What contributed to your mood today?"></textarea>
+            <div class="form-text"><span id="charCount">0</span>/300 characters</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Check-In</button>
+    </form>
+    <hr>
+    <h4 class="mb-3" style="font-weight:500; color:#222;">Mood Trends</h4>
+    <div class="mb-4">
+        <canvas id="moodLineChart" height="120"></canvas>
+    </div>
+    <div class="mb-4">
+        <canvas id="emotionBarChart" height="120"></canvas>
+    </div>
+    <button class="btn btn-outline-secondary" onclick="downloadCSV()">Download CSV</button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// In-memory mood data
+let moodData = [];
+
+// Update mood value display
+const moodSlider = document.getElementById('moodSlider');
+const moodValue = document.getElementById('moodValue');
+moodSlider.oninput = function() {
+    moodValue.textContent = this.value;
+    moodValue.style.color = this.value < 0 ? '#b22222' : (this.value > 0 ? '#228B22' : '#222');
+};
+
+// Character count for reflection
+const reflection = document.getElementById('reflection');
+const charCount = document.getElementById('charCount');
+reflection.oninput = function() {
+    charCount.textContent = this.value.length;
+};
+
+function submitMood() {
+    const date = new Date().toISOString().split('T')[0];
+    const mood = parseInt(moodSlider.value);
+    const primary = document.getElementById('primaryEmotion').value;
+    const secondary = document.getElementById('secondaryEmotion').value;
+    const energy = document.querySelector('input[name="energy"]:checked')?.value || '';
+    const note = reflection.value.trim();
+    if (!primary || !energy) {
+        alert('Please fill all required fields.');
+        return;
+    }
+    moodData.push({ date, mood, primary, secondary, energy, note });
+    renderCharts();
+    document.getElementById('moodForm').reset();
+    moodSlider.value = 0;
+    moodValue.textContent = '0';
+    moodValue.style.color = '#222';
+    charCount.textContent = '0';
+}
+
+function renderCharts() {
+    // Mood Over Time (Line)
+    const dates = moodData.map(d => d.date);
+    const moods = moodData.map(d => d.mood);
+    if (window.moodLineChartObj) window.moodLineChartObj.destroy();
+    window.moodLineChartObj = new Chart(document.getElementById('moodLineChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: 'Mood Over Time',
+                data: moods,
+                borderColor: '#222',
+                backgroundColor: 'rgba(34,34,34,0.05)',
+                tension: 0.2,
+                pointRadius: 3,
+                pointBackgroundColor: moods.map(m => m < 0 ? '#b22222' : (m > 0 ? '#228B22' : '#0d6efd')),
+                fill: false
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    min: -5,
+                    max: 5,
+                    ticks: { stepSize: 1 },
+                    grid: { color: '#eee' }
+                },
+                x: { grid: { color: '#f5f5f5' } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+    // Primary Emotion Frequency (Bar)
+    const emotionCounts = {};
+    moodData.forEach(d => {
+        if (!emotionCounts[d.primary]) emotionCounts[d.primary] = 0;
+        emotionCounts[d.primary]++;
+    });
+    if (window.emotionBarChartObj) window.emotionBarChartObj.destroy();
+    window.emotionBarChartObj = new Chart(document.getElementById('emotionBarChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(emotionCounts),
+            datasets: [{
+                label: 'Primary Emotion Frequency',
+                data: Object.values(emotionCounts),
+                backgroundColor: '#0d6efd',
+                borderColor: '#222',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#eee' } },
+                x: { grid: { color: '#f5f5f5' } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+function downloadCSV() {
+    if (moodData.length === 0) {
+        alert('No data to export.');
+        return;
+    }
+    let csv = 'Date,Mood,Primary Emotion,Secondary Emotion,Energy,Reflection\n';
+    moodData.forEach(d => {
+        csv += `${d.date},${d.mood},${d.primary},${d.secondary},${d.energy},"${d.note.replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mood_tracker.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %} 

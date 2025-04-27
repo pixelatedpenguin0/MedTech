@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}My Medications - MedTech{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>My Medications</h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('medication.add_medication') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Add Medication
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for medication in medications %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ medication.name }}</h5>
+                    <div class="btn-group">
+                        <a href="{{ url_for('medication.edit_medication', id=medication.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ medication.id }}">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dosage mb-3">
+                        <div id="dosage-short-{{ medication.id }}">
+                            <p class="mb-1"><strong>Dosage:</strong> {{ medication.dosage[:200] }}{% if medication.dosage|length > 200 %}...{% endif %}</p>
+                        </div>
+                        <div id="dosage-full-{{ medication.id }}" style="display: none;">
+                            <p class="mb-1"><strong>Dosage:</strong> {{ medication.dosage }}</p>
+                        </div>
+                        {% if medication.dosage|length > 200 %}
+                        <button class="btn btn-sm btn-link p-0" onclick="toggleDosage('{{ medication.id }}')">Read More</button>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="mb-1"><strong>Frequency:</strong> {{ medication.frequency }}</p>
+                    <p class="mb-1"><strong>Remaining:</strong> <span id="{{ medication.name }}-dosage-count">{{ medication.remaining_doses }}</span> of {{ medication.total_doses }}</p>
+                    {% if medication.notes %}
+                    <p class="mb-1"><strong>Notes:</strong> {{ medication.notes }}</p>
+                    {% endif %}
+                    
+                    <div class="btn-group mt-3">
+                        <button class="btn btn-sm btn-success" onclick="recordAdherence({{ medication.id }}, 'taken')">
+                            <i class="bi bi-check-lg"></i> Taken
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="recordAdherence({{ medication.id }}, 'missed')">
+                            <i class="bi bi-x-lg"></i> Missed
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="recordAdherence({{ medication.id }}, 'skipped')">
+                            <i class="bi bi-skip-forward"></i> Skipped
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Delete Modal -->
+        <div class="modal fade" id="deleteModal{{ medication.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete {{ medication.name }}?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <form action="{{ url_for('medication.delete_medication', id=medication.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                You haven't added any medications yet. <a href="{{ url_for('medication.add_medication') }}">Add your first medication</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleDosage(id) {
+    const shortText = document.getElementById(`dosage-short-${id}`);
+    const fullText = document.getElementById(`dosage-full-${id}`);
+    const button = document.querySelector(`button[onclick="toggleDosage('${id}')"]`);
+
+    if (fullText.style.display === "none") {
+        fullText.style.display = "block";
+        shortText.style.display = "none";
+        button.innerText = "Show Less";
+    } else {
+        fullText.style.display = "none";
+        shortText.style.display = "block";
+        button.innerText = "Read More";
+    }
+}
+
+function recordAdherence(medicationId, status) {
+    fetch(`/medications/${medicationId}/adherence`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `status=${status}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            // Update the dosage count
+            const dosageElement = document.getElementById(`${data.name}-dosage-count`);
+            if (dosageElement) {
+                dosageElement.textContent = data.remaining_doses;
+            }
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+</script>
+{% endblock %} 

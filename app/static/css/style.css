@@ -1,0 +1,107 @@
+/* Custom styles for MedTech */
+
+/* General styles */
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: none;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Forms */
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Buttons */
+.btn {
+    border-radius: 4px;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Medication cards */
+.medication-card {
+    transition: transform 0.2s;
+}
+
+.medication-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Adherence tracking */
+.adherence-badge {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.adherence-taken {
+    background-color: #198754;
+    color: white;
+}
+
+.adherence-missed {
+    background-color: #dc3545;
+    color: white;
+}
+
+.adherence-skipped {
+    background-color: #ffc107;
+    color: black;
+}
+
+/* Reminders */
+.reminder-time {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Dashboard */
+.dashboard-stats {
+    background-color: #fff;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.5rem;
+    }
+} 

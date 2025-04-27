@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Pharmacy Prices - MedTech{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mb-4">Know About Possible Costs Involved</h1>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8 mx-auto">
+                            <div class="mb-3">
+                                <label for="medication" class="form-label">Medication Name</label>
+                                <input type="text" class="form-control" id="medication" placeholder="Enter medication name (e.g., Lipitor 20mg)">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-grid col-md-8 mx-auto">
+                        <button class="btn btn-primary" onclick="findPrices()">
+                            <i class="bi bi-search"></i> Find Best Prices
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="results" class="card" style="display: none;">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Results</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary" onclick="sortByPrice()">Sort by Price</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Pharmacy</th>
+                                    <th>Price</th>
+                                    <th>Form</th>
+                                    <th>Quantity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversation Section -->
+            <div class="row mt-5">
+                <div class="col-md-12">
+                    <h3>Doctor-Patient Cost Discussion</h3>
+                    <div id="conversationHistory" class="border rounded p-3 mb-3" style="background:#f8f9fa; min-height:120px; max-height:250px; overflow-y:auto;"></div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Doctor's Notes/Message</h5>
+                            <form id="doctorForm" onsubmit="sendMessage('doctor'); return false;">
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="doctorMessage" placeholder="Type a note or cost estimate...">
+                                    <button class="btn btn-primary" type="submit">Send as Doctor</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Patient's Feedback/Reply</h5>
+                            <form id="patientForm" onsubmit="sendMessage('patient'); return false;">
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="patientMessage" placeholder="Type your feedback or question...">
+                                    <button class="btn btn-success" type="submit">Send as Patient</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentResults = [];
+
+function findPrices() {
+    const medication = document.getElementById('medication').value;
+    
+    if (!medication) {
+        alert('Please enter a medication name');
+        return;
+    }
+    
+    fetch(`/medications/search_prices?medication=${encodeURIComponent(medication)}`)
+        .then(response => response.json())
+        .then(data => {
+            currentResults = data;
+            displayResults(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error searching for prices. Please try again.');
+        });
+}
+
+function displayResults(data) {
+    const tableBody = document.getElementById('resultsTable');
+    tableBody.innerHTML = '';
+    
+    if (data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No results found</td></tr>';
+    } else {
+        data.forEach(pharmacy => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${pharmacy.pharmacy}</td>
+                <td>$${pharmacy.price.toFixed(2)}</td>
+                <td>${pharmacy.form}</td>
+                <td>${pharmacy.quantity}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="addToMedications('${pharmacy.pharmacy}', ${pharmacy.price})">
+                        <i class="bi bi-plus-lg"></i> Add to My Medications
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+    
+    document.getElementById('results').style.display = 'block';
+}
+
+function sortByPrice() {
+    currentResults.sort((a, b) => a.price - b.price);
+    displayResults(currentResults);
+}
+
+function addToMedications(pharmacy, price) {
+    const medication = document.getElementById('medication').value;
+    if (!medication) return;
+    
+    // Redirect to add medication page with pre-filled information
+    window.location.href = `/medications/add?name=${encodeURIComponent(medication)}&pharmacy=${encodeURIComponent(pharmacy)}&price=${price}`;
+}
+
+// Add event listener for Enter key in input
+document.getElementById('medication').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        findPrices();
+    }
+});
+
+// Simple in-memory conversation (replace with backend for persistence)
+let conversation = [];
+
+function renderConversation() {
+    const historyDiv = document.getElementById('conversationHistory');
+    historyDiv.innerHTML = conversation.map(msg =>
+        `<div><strong>${msg.sender === 'doctor' ? 'Doctor' : 'Patient'}:</strong> ${msg.text}</div>`
+    ).join('');
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+}
+
+function sendMessage(sender) {
+    const inputId = sender === 'doctor' ? 'doctorMessage' : 'patientMessage';
+    const input = document.getElementById(inputId);
+    const text = input.value.trim();
+    if (!text) return;
+    conversation.push({ sender, text });
+    input.value = '';
+    renderConversation();
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Medication Information - MedTech{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mb-4">Medication Information</h1>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search for a medication...">
+                        <button class="btn btn-primary" onclick="searchMedication()">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="searchResults" class="mb-4" style="display: none;">
+                <h3>Search Results</h3>
+                <div class="list-group" id="resultsList"></div>
+            </div>
+            
+            <div id="medicationDetails" class="card" style="display: none;">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 id="medicationName" class="mb-0"></h3>
+                    <button class="btn btn-success" onclick="addToMedications()">
+                        <i class="bi bi-plus-lg"></i> Add to My Medications
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>Basic Information</h4>
+                            <table class="table">
+                                <tr>
+                                    <th>Generic Name:</th>
+                                    <td id="genericName"></td>
+                                </tr>
+                                <tr>
+                                    <th>Manufacturer:</th>
+                                    <td id="manufacturer"></td>
+                                </tr>
+                                <tr>
+                                    <th>Route:</th>
+                                    <td id="route"></td>
+                                </tr>
+                                <tr>
+                                    <th>Active Substance:</th>
+                                    <td id="substance"></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>Usage Information</h4>
+                            <div id="indications" class="mb-3">
+                                <h5>Indications and Usage</h5>
+                                <p id="indicationsText"></p>
+                            </div>
+                            <div id="dosage" class="mb-3">
+                                <h5>Dosage and Administration</h5>
+                                <p id="dosageText"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <h4>Patient Summary</h4>
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <p id="patientSummary"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <h4>Safety Information</h4>
+                            <div class="accordion" id="safetyAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#warningsCollapse">
+                                            Warnings
+                                        </button>
+                                    </h2>
+                                    <div id="warningsCollapse" class="accordion-collapse collapse show" data-bs-parent="#safetyAccordion">
+                                        <div class="accordion-body" id="warningsText"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#adverseCollapse">
+                                            Adverse Reactions
+                                        </button>
+                                    </h2>
+                                    <div id="adverseCollapse" class="accordion-collapse collapse" data-bs-parent="#safetyAccordion">
+                                        <div class="accordion-body" id="adverseText"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#interactionsCollapse">
+                                            Drug Interactions
+                                        </button>
+                                    </h2>
+                                    <div id="interactionsCollapse" class="accordion-collapse collapse" data-bs-parent="#safetyAccordion">
+                                        <div class="accordion-body" id="interactionsText"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#contraindicationsCollapse">
+                                            Contraindications
+                                        </button>
+                                    </h2>
+                                    <div id="contraindicationsCollapse" class="accordion-collapse collapse" data-bs-parent="#safetyAccordion">
+                                        <div class="accordion-body" id="contraindicationsText"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Medication Modal -->
+<div class="modal fade" id="addMedicationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Medication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addMedicationForm">
+                    <div class="mb-3">
+                        <label for="totalDoses" class="form-label">Total Number of Doses</label>
+                        <input type="number" class="form-control" id="totalDoses" name="total_doses" min="0" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="frequency" class="form-label">Frequency</label>
+                        <select class="form-select" id="frequency" name="frequency" required>
+                            <option value="">Select frequency</option>
+                            <option value="Once daily">Once daily</option>
+                            <option value="Twice daily">Twice daily</option>
+                            <option value="Three times daily">Three times daily</option>
+                            <option value="Four times daily">Four times daily</option>
+                            <option value="Every 6 hours">Every 6 hours</option>
+                            <option value="Every 8 hours">Every 8 hours</option>
+                            <option value="Every 12 hours">Every 12 hours</option>
+                            <option value="As needed">As needed</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddMedication()">Add Medication</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentMedication = null;
+
+function searchMedication() {
+    const query = document.getElementById('searchInput').value;
+    if (!query) return;
+    
+    fetch(`/medications/search?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            const resultsList = document.getElementById('resultsList');
+            resultsList.innerHTML = '';
+            
+            if (data.length === 0) {
+                resultsList.innerHTML = '<div class="list-group-item">No results found</div>';
+            } else {
+                data.forEach(medication => {
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.innerHTML = `
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">${medication.name}</h5>
+                            <small>${medication.source}</small>
+                        </div>
+                        <p class="mb-1">${medication.generic_name || 'Generic name not available'}</p>
+                    `;
+                    item.onclick = (e) => {
+                        e.preventDefault();
+                        showMedicationDetails(medication.name);
+                    };
+                    resultsList.appendChild(item);
+                });
+            }
+            
+            document.getElementById('searchResults').style.display = 'block';
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function showMedicationDetails(name) {
+    fetch(`/medications/details/${encodeURIComponent(name)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Medication details not found');
+                return;
+            }
+            
+            currentMedication = data;
+            
+            // Update basic information
+            document.getElementById('medicationName').textContent = data.name;
+            document.getElementById('genericName').textContent = data.generic_name || 'Not available';
+            document.getElementById('manufacturer').textContent = data.manufacturer || 'Not available';
+            document.getElementById('route').textContent = data.route || 'Not available';
+            document.getElementById('substance').textContent = data.substance || 'Not available';
+            
+            // Update usage information
+            document.getElementById('indicationsText').textContent = data.indications_and_usage || 'Not available';
+            document.getElementById('dosageText').textContent = data.dosage_and_administration || 'Not available';
+            
+            // Update patient summary
+            document.getElementById('patientSummary').textContent = data.patient_summary || 'Not available';
+            
+            // Update safety information
+            document.getElementById('warningsText').textContent = data.warnings || 'Not available';
+            document.getElementById('adverseText').textContent = data.adverse_reactions || 'Not available';
+            document.getElementById('interactionsText').textContent = data.drug_interactions || 'Not available';
+            document.getElementById('contraindicationsText').textContent = data.contraindications || 'Not available';
+            
+            // Show the details section
+            document.getElementById('medicationDetails').style.display = 'block';
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function addToMedications() {
+    if (!currentMedication) return;
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('addMedicationModal'));
+    modal.show();
+}
+
+function submitAddMedication() {
+    if (!currentMedication) return;
+    
+    const formData = new FormData(document.getElementById('addMedicationForm'));
+    formData.append('name', currentMedication.name);
+    formData.append('dosage', currentMedication.dosage_and_administration || 'As prescribed');
+    
+    fetch('/medications/add', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addMedicationModal'));
+            modal.hide();
+            
+            // Show success message
+            alert('Medication added successfully!');
+            
+            // Redirect to medications list
+            window.location.href = '/medications';
+        } else {
+            throw new Error('Failed to add medication');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error adding medication. Please try again.');
+    });
+}
+
+// Add event listener for Enter key in search input
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchMedication();
+    }
+});
+
+function addReflectionToLog(reflection, date) {
+    // Implementation of addReflectionToLog function
+}
+</script>
+{% endblock %} 

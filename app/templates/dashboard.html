@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - MedTech{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1 class="mb-4">Dashboard</h1>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Today's Medications</h5>
+            </div>
+            <div class="card-body">
+                {% if medications %}
+                <div class="list-group">
+                    {% for medication in medications %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ medication.name }}</h5>
+                            <small>{{ medication.frequency }}</small>
+                        </div>
+                        
+                        <div class="dosage mb-2">
+                            <div id="dashboard-dosage-short-{{ medication.id }}">
+                                <p class="mb-1"><strong>Dosage:</strong> {{ medication.dosage[:200] }}{% if medication.dosage|length > 200 %}...{% endif %}</p>
+                            </div>
+                            <div id="dashboard-dosage-full-{{ medication.id }}" style="display: none;">
+                                <p class="mb-1"><strong>Dosage:</strong> {{ medication.dosage }}</p>
+                            </div>
+                            {% if medication.dosage|length > 200 %}
+                            <button class="btn btn-sm btn-link p-0" onclick="toggleDashboardDosage('{{ medication.id }}')">Read More</button>
+                            {% endif %}
+                        </div>
+                        
+                        <p class="mb-1">Remaining: <span id="dashboard-{{ medication.name }}-dosage-count">{{ medication.remaining_doses }}</span> of {{ medication.total_doses }}</p>
+                        {% if medication.notes %}
+                        <p class="mb-1 text-muted"><small>Notes: {{ medication.notes }}</small></p>
+                        {% endif %}
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-success" onclick="markDoseTaken({{ medication.id }})">
+                                <i class="bi bi-check-lg"></i> Taken
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="doseReset({{ medication.id }})">
+                                <i class="bi bi-arrow-counterclockwise"></i> Dose Reset
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No medications scheduled for today.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Medication Tracking</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="medicationChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Important Notes Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Important Notes</h5>
+            </div>
+            <div class="card-body">
+                <div class="input-group">
+                    <textarea class="form-control" id="importantNotes" rows="2" placeholder="Add important notes here..."></textarea>
+                    <button class="btn btn-primary" type="button" onclick="submitImportantNote()">Add</button>
+                </div>
+                <div id="importantNotesLog" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('medication.add_medication') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> Add Medication
+                    </a>
+                    <a href="{{ url_for('medication.list_medications') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-list"></i> View All Medications
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Upcoming Reminders</h5>
+            </div>
+            <div class="card-body">
+                {% if medications %}
+                <div class="list-group">
+                    {% for medication in medications %}
+                    {% if medication.reminders %}
+                    {% for reminder in medication.reminders %}
+                    <div class="list-group-item reminder-item" 
+                         data-time="{{ reminder.time.strftime('%H:%M') }}"
+                         data-days="{{ reminder.days }}"
+                         data-medication="{{ medication.name }}">
+                        <h6 class="mb-1">{{ medication.name }}</h6>
+                        <p class="mb-1">Time: {{ reminder.time.strftime('%I:%M %p') }}</p>
+                        <small>Days: {{ reminder.days }}</small>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No upcoming reminders.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Reflection Log Section -->
+        <div class="card mt-5">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Reflection Log</h5>
+            </div>
+            <div class="card-body">
+                <div class="input-group mb-2">
+                    <input type="text" class="form-control" id="reflectionInput" placeholder="Enter a short reflection...">
+                    <button class="btn btn-primary" type="button" onclick="submitReflection()">Add</button>
+                </div>
+                <div id="reflectionLog" style="min-height:60px;">
+                    <div class="text-muted">No reflections yet.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Constants for weekdays
+const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+// Global variable to track daily intake
+let dailyIntakeData = {
+    'Mon': 0,
+    'Tue': 0,
+    'Wed': 0,
+    'Thu': 0,
+    'Fri': 0,
+    'Sat': 0,
+    'Sun': 0
+};
+
+let medicationChart = null;
+
+function toggleDashboardDosage(id) {
+    const shortText = document.getElementById(`dashboard-dosage-short-${id}`);
+    const fullText = document.getElementById(`dashboard-dosage-full-${id}`);
+    const button = document.querySelector(`button[onclick="toggleDashboardDosage('${id}')"]`);
+
+    if (fullText.style.display === "none") {
+        fullText.style.display = "block";
+        shortText.style.display = "none";
+        button.innerText = "Show Less";
+    } else {
+        fullText.style.display = "none";
+        shortText.style.display = "block";
+        button.innerText = "Read More";
+    }
+}
+
+function markDoseTaken(medicationId) {
+    // Get today's weekday
+    const today = new Date();
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayName = days[today.getDay()];
+    
+    // Update daily intake data
+    dailyIntakeData[dayName] += 1;
+    
+    // Update the graph
+    updateGraph();
+    
+    // Record adherence in the database
+    recordAdherence(medicationId, 'taken');
+}
+
+function recordAdherence(medicationId, status) {
+    fetch(`/medications/${medicationId}/adherence`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `status=${status}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            // Update the dosage count
+            const dosageElement = document.getElementById(`dashboard-${data.name}-dosage-count`);
+            if (dosageElement) {
+                dosageElement.textContent = data.remaining_doses;
+            }
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function updateGraph() {
+    if (medicationChart) {
+        medicationChart.data.datasets[0].data = weekDays.map(day => dailyIntakeData[day]);
+        medicationChart.update();
+    }
+}
+
+function doseReset(medicationId) {
+    fetch(`/medications/${medicationId}/reset_doses`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            // Update the dosage count
+            const dosageElement = document.getElementById(`dashboard-${data.name}-dosage-count`);
+            if (dosageElement) {
+                dosageElement.textContent = data.remaining_doses;
+            }
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Initialize medication tracking chart
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('medicationChart').getContext('2d');
+    
+    // Get medication tracking data from the server
+    fetch('/medications/stats')
+        .then(response => response.json())
+        .then(data => {
+            // Initialize dailyIntakeData with server data
+            data.actual.forEach((value, index) => {
+                const dayIndex = (new Date().getDay() - 6 + index) % 7;
+                const dayName = weekDays[dayIndex];
+                dailyIntakeData[dayName] = value;
+            });
+            
+            // Create the chart
+            medicationChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: weekDays,
+                    datasets: [{
+                        label: 'Actual Intake',
+                        data: weekDays.map(day => dailyIntakeData[day]),
+                        borderColor: '#198754',
+                        tension: 0.1
+                    }, {
+                        label: 'Ideal Intake',
+                        data: data.ideal,
+                        borderColor: '#0d6efd',
+                        borderDash: [5, 5],
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Doses'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Day of Week'
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading medication data:', error));
+});
+
+// In-memory logs
+let importantNotesLog = [];
+let reflectionLog = [];
+
+// Add Important Note
+function submitImportantNote() {
+    const note = document.getElementById('importantNotes').value.trim();
+    if (note) {
+        importantNotesLog.push({ message: note, date: new Date().toLocaleString() });
+        document.getElementById('importantNotes').value = '';
+        renderImportantNotesLog();
+    }
+}
+
+function renderImportantNotesLog() {
+    const logDiv = document.getElementById('importantNotesLog');
+    if (!importantNotesLog.length) {
+        logDiv.innerHTML = '<div class="text-muted">No important notes yet.</div>';
+        return;
+    }
+    logDiv.innerHTML = importantNotesLog.map(n =>
+        `<div class="mb-2"><span class="text-secondary" style="font-size:0.95em;">${n.date}:</span> ${n.message}</div>`
+    ).join('');
+}
+
+// Add Reflection
+function submitReflection() {
+    const reflection = document.getElementById('reflectionInput').value.trim();
+    if (reflection) {
+        reflectionLog.push({ reflection, date: new Date().toLocaleString() });
+        document.getElementById('reflectionInput').value = '';
+        renderReflectionLog();
+    }
+}
+
+function renderReflectionLog() {
+    const logDiv = document.getElementById('reflectionLog');
+    if (!reflectionLog.length) {
+        logDiv.innerHTML = '<div class="text-muted">No reflections yet.</div>';
+        return;
+    }
+    logDiv.innerHTML = reflectionLog.map(r =>
+        `<div class="mb-2"><span class="text-secondary" style="font-size:0.95em;">${r.date}:</span> ${r.reflection}</div>`
+    ).join('');
+}
+
+// On page load, render logs
+window.addEventListener('DOMContentLoaded', function() {
+    renderImportantNotesLog();
+    renderReflectionLog();
+});
+</script>
+{% endblock %} 
