@@ -62,11 +62,11 @@ The application will be available at `http://localhost:5000`.
 
 ## Usage
 
-1. Register a new account or login with existing credentials
-2. Add medications manually or scan prescription labels
-3. Set up reminders for each medication
-4. Track medication adherence
-5. View adherence history and statistics
+1. Register a new account or login with existing credentials.
+2. Add medications manually or scan prescription labels.
+3. Set up reminders for each medication.
+4. Track medication adherence.
+5. View adherence history and statistics.
 
 ## API Integration
 
